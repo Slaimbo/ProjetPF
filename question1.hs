@@ -109,6 +109,8 @@ instance Table Dico_lol where
 -- L'arbre de prefixe.
 data Arbre = Noeud (Maybe Char, Maybe Code, [Arbre])
 
+
+--retourne les arbres qui n'ont pas matché, l'arbre qui match, le reste des arbres.
 inChildren :: [Arbre] -> [Arbre] -> Char -> [[Arbre]]
 inChildren [] poubelle char = []
 inChildren ((Noeud (car, code, children)):xs) poubelle char = if car == Just char
@@ -116,28 +118,52 @@ inChildren ((Noeud (car, code, children)):xs) poubelle char = if car == Just cha
                                         else inChildren xs (x:poubelle) char
                                             where x = Noeud (car, code, children)
 
+-- Retourne le plus grand élément de la liste donné en entré
+maxi :: [Maybe Code] -> Code
+maxi ((Just code):[]) = code 
+maxi ((Just code):xs) = if code > (maxi xs)
+                         then code
+                         else maxi xs
+
+getcodeFrom (Noeud (_, _, fils)) = getcode fils
+
+-- Retourne la liste de tout les code contenu dans l'arbre
+getcode :: [Arbre] -> [Maybe Code]
+getcode [] = []
+getcode ((Noeud (Just char, Nothing, [])):[]) = []
+getcode ((Noeud (Just char, Just code, [])):[]) = [Just code]
+
+getcode ((Noeud (Just char, Just code, children_f)):[]) = [Just code] ++ (getcode children_f)                                              
+getcode ((Noeud (Just char, Nothing, children_f)):[]) = getcode children_f
+
+getcode ((Noeud (Just char, Just code, children_f)):ys) = [Just code] ++ (getcode ys) ++ (getcode children_f)
+getcode ((Noeud (Just char, Nothing, children_f)):ys) = (getcode ys) ++ (getcode children_f)
+
+
+--Creation des branches quand plus aucun chemin ne correspond a mon inclusion
+insert2 (Noeud (Nothing, Nothing, [])) str newcode = if (length str == 1)
+                                                       then Noeud (Just (head str), Just (newcode+1), [])
+                                                       else Noeud (Just (head str), Nothing, [insert2 (Noeud (Nothing, Nothing, [])) (tail str) newcode ] )
+
+--parcour de l'arbre tant que cela correspond a mon insertion
+insert2 (Noeud (char, code, children) ) (y:ys) newcode = if (length mathch_child) == 0
+                                                             then Noeud (char, code, children ++ [insert2 (Noeud (Nothing, Nothing, [])) (y:ys) newcode ] )
+                                                             else Noeud (char, code, ( (mathch_child !! 0) ++ [(insert2 ( (mathch_child !! 1) !! 0) ys newcode)] ++ (mathch_child !! 2) ) )
+                                                                where father = Noeud (char, code, children)
+                                                                      mathch_child = inChildren children [] y   --(nomatchbefore, match, nomatchafter)
 
 -- Instanciation
 instance Table Arbre where
     empty = Noeud (Nothing, Nothing, []) -- Racine de tout les sous arbre
     
-    insert (Noeud (Nothing, Nothing, [])) str = if (length str == 1)
-                                                   then Noeud (Just (head str), Just 1, [])
-                                                   else Noeud (Just (head str), Nothing, [insert (Noeud (Nothing, Nothing, [])) (tail str)] )
-    insert (Noeud (char, code, children) ) (y:ys) = if (length mathch_child) == 0
-                                                     then Noeud (char, code, children ++ [insert (Noeud (Nothing, Nothing, [])) (y:ys) ] )
-                                                     else Noeud (char, code, ( (mathch_child !! 0) ++ [(insert ( (mathch_child !! 1) !! 0) ys )] ++ (mathch_child !! 2) ) )
-                                                        where father = Noeud (char, code, children)
-                                                              mathch_child = inChildren children [] y   --(nomatchbefore, match, nomatchafter)
+    -- à iniaitliser avec un code à -1 pour l'arbre racine
+    insert (Noeud (char, code, children) ) str = if getcode children == [] --Aucun code n'as ete trouvé
+                                                    then insert2 (Noeud (char, code, children)) str (-1)
+                                                    else insert2 (Noeud (char, code, children)) str (maxi (getcode children))
 
 
 
-
-
-
-
-
-
+--getcodeFrom (insert (insert(Noeud (Nothing, Just (-1), [] )) "o") "oo")
 
 
 
