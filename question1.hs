@@ -1,29 +1,19 @@
 type Code = Int
-type Test = [(String, Code)]
 
 --class (Eq a) => Table a where
 class Table a where
     empty :: a
     insert :: a -> String -> a
+    
     codeOf :: a -> String -> Maybe Code
     stringOf :: a -> Code -> Maybe String
     isIn :: a -> String -> Bool
     split_2 :: a -> String -> String -> Maybe Code -> (String, Maybe Code, String)
     split :: a -> String -> (String, Maybe Code, String)
 
---lzwEncode :: Table a => a -> String -> [Code]
---lzwEncode table [] = []
---lzwEncode table str = code : lzwEncode newTable suffix
---	where
---	  (prefix, Just code, suffix) = split str
---	  newTable = case suffix of
---   	  head:tail -> insert table (prefix ++ [head])
---   	  [] -> table
-
-
 -------------------------- Question 1 ----------------------------------------
 
---translate string into code with table untranslate string as parameter--
+-- Translate string into code with table, untranslated string as parameter --
 
 lzwEncode :: Table a => a -> String -> [Code]
 lzwEncode table [] = []
@@ -34,10 +24,10 @@ lzwEncode table str =
         code : lzwEncode (insert table (prefix ++ [head])) (head:tail)
     (prefix, Just code, []) -> [code]
 
---translate code into string with table, oldtrans ans untranslate code as parameter-- 
+--translate code into string with table, oldtrans and untranslated code as parameter-- 
 
 lzw_Decode :: Table a => a -> String -> [Code] -> String
-lzw_Decode table oldtrans [] = []
+lzw_Decode table oldtrans [] = oldtrans
 lzw_Decode table oldtrans (x:xs) = case stringOf table x of
         Just newtrans -> oldtrans ++ lzw_Decode (insert table (oldtrans ++ [head newtrans])) newtrans xs
         Nothing -> oldtrans ++ lzw_Decode (insert table (oldtrans ++ [head newtrans])) newtrans xs
@@ -101,12 +91,108 @@ instance Table Dico_lol where
 
     split_2 (Dico dic) startstr [] lastcode = (startstr, lastcode, [])
     split_2 (Dico dic) startstr (x:xs) lastcode = if codeOf (Dico dic) (startstr ++ [x]) == Nothing
-                                                then (startstr, lastcode, xs)
-                                                else split_2 (Dico dic) (startstr ++ [x]) xs (codeOf (Dico dic) startstr)
+                                                then (startstr, lastcode, x:xs)
+                                                else split_2 (Dico dic) (startstr ++ [x]) xs (codeOf (Dico dic) (startstr ++ [x]))
 
     split (Dico dic) (x:xs) = if codeOf (Dico dic) [x] == Nothing
                                 then ([], Nothing, (x:xs))
                                 else split_2 (Dico dic) [x] xs (codeOf (Dico dic) [x])
+
+
+-- Test de la partie 1
+
+--lzwDecode (Dico [ (0, "a"), (1, "b"), (2, "c") ] ) (lzwEncode (Dico [ (0, "a"), (1, "b"), (2, "c") ] ) "abccba")
+
+
+-------------------------- Question 4 ----------------------------------------
+
+-- L'arbre de prefixe.
+data Arbre = Noeud (Maybe Char, Maybe Code, [Arbre])
+
+inChildren :: [Arbre] -> [Arbre] -> Char -> [[Arbre]]
+inChildren [] poubelle char = []
+inChildren ((Noeud (car, code, children)):xs) poubelle char = if car == Just char
+                                        then [poubelle, [x], xs]
+                                        else inChildren xs (x:poubelle) char
+                                            where x = Noeud (car, code, children)
+
+
+-- Instanciation
+instance Table Arbre where
+    empty = Noeud (Nothing, Nothing, []) -- Racine de tout les sous arbre
+    
+    insert (Noeud (Nothing, Nothing, [])) str = if (length str == 1)
+                                                   then Noeud (Just (head str), Just 1, [])
+                                                   else Noeud (Just (head str), Nothing, [insert (Noeud (Nothing, Nothing, [])) (tail str)] )
+    insert (Noeud (char, code, children) ) (y:ys) = if (length mathch_child) == 0
+                                                     then Noeud (char, code, children ++ [insert (Noeud (Nothing, Nothing, [])) (y:ys) ] )
+                                                     else Noeud (char, code, ( (mathch_child !! 0) ++ [(insert ( (mathch_child !! 1) !! 0) ys )] ++ (mathch_child !! 2) ) )
+                                                        where father = Noeud (char, code, children)
+                                                              mathch_child = inChildren children [] y   --(nomatchbefore, match, nomatchafter)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
