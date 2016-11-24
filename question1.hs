@@ -146,11 +146,27 @@ insert2 (Noeud (Nothing, Nothing, [])) str newcode = if (length str == 1)
                                                        else Noeud (Just (head str), Nothing, [insert2 (Noeud (Nothing, Nothing, [])) (tail str) newcode ] )
 
 --parcour de l'arbre tant que cela correspond a mon insertion
+--Eventuellement gerer le cas insert aaaa puis insert aa donc le cas ou code = Nothing si bug sinon osef
 insert2 (Noeud (char, code, children) ) (y:ys) newcode = if (length mathch_child) == 0
                                                              then Noeud (char, code, children ++ [insert2 (Noeud (Nothing, Nothing, [])) (y:ys) newcode ] )
                                                              else Noeud (char, code, ( (mathch_child !! 0) ++ [(insert2 ( (mathch_child !! 1) !! 0) ys newcode)] ++ (mathch_child !! 2) ) )
                                                                 where father = Noeud (char, code, children)
                                                                       mathch_child = inChildren children [] y   --(nomatchbefore, match, nomatchafter)
+
+stringOf2 :: Arbre -> Code -> String -> String
+stringOf2 (Noeud (Just p_char, p_code, []) ) code str = if (Just code) == p_code
+                                                       then str ++ [p_char]
+                                                       else []
+stringOf2 (Noeud (Nothing, _, []) ) code str = []
+
+stringOf2 (Noeud (Just p_char, p_code, (Noeud (Just f_char, f_code , f_children)):xs) ) code str =      --Je recherche dans le reste de mes fils et les fils de mon fils ou je retourne le code si trouvé
+            if f_code == (Just code)
+                then str ++ [p_char] ++ [f_char]
+                else case stringOf2 (Noeud (Just p_char, p_code, xs) ) code str of
+                        []  -> stringOf2 (Noeud (Just f_char, f_code, f_children)) code (str ++ [p_char])
+                        any -> any
+
+
 
 -- Instanciation
 instance Table Arbre where
@@ -160,53 +176,52 @@ instance Table Arbre where
     insert (Noeud (char, code, children) ) str = if getcode children == [] --Aucun code n'as ete trouvé
                                                     then insert2 (Noeud (char, code, children)) str (-1)
                                                     else insert2 (Noeud (char, code, children)) str (maxi (getcode children))
+    --getcodeFrom (insert (insert(Noeud (Nothing, Just (-1), [] )) "oooo") "oo")
 
+    codeOf (Noeud (Just p_char, Just p_code, _) ) [] = Just p_code -- si str vide et code -> OK
+    codeOf (Noeud (Just p_char, Nothing, _) ) [] = Nothing         -- si str vide mais pas code
+    codeOf (Noeud (_, _, []) ) _ = Nothing                         -- si str non vide et plus de fils
 
+    codeOf (Noeud (p_char, p_code, (Noeud (Just f_char, f_code , f_children)):xs) ) str = 
+            if f_char == (head str)
+                then codeOf (Noeud (Just f_char, f_code , f_children)) (tail str)
+                else codeOf (Noeud (p_char, p_code, xs) ) str
 
---getcodeFrom (insert (insert(Noeud (Nothing, Just (-1), [] )) "o") "oo")
+    
+    stringOf (Noeud (Nothing, p_code, [] )) code = Nothing
 
+    stringOf (Noeud (Nothing, p_code, x:xs ) ) code = 
+                case stringOf2 x code [] of
+                    []  -> stringOf (Noeud (Nothing, p_code, xs ) ) code
+                    any -> Just any
 
+    
+    isIn (Noeud (Just p_char, Just p_code, _) ) [] = True          -- si str vide et code -> OK
+    isIn (Noeud (_, Nothing, _) ) [] = False 
+    isIn (Noeud (_, _, []) ) (x:xs) = False                -- si str non vide et plus de fils
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    isIn (Noeud (p_char, p_code, (Noeud (Just f_char, f_code , f_children)):xs) ) str = 
+            if f_char == (head str)
+                then isIn (Noeud (Just f_char, f_code , f_children)) (tail str)
+                else isIn (Noeud (p_char, p_code, xs) ) str
 
 
 
 
 
+--case stringOf2 (Noeud (p_char, p_code, children) ) code [] of
+--                                                         [] -> Nothing
+--                                                         any -> any
+                                                      
+
+
+--stringOf2 (Noeud (p_char, p_code, (Noeud (Just f_char, f_code , [])):[]) ) code str = []  --Mon dernier fils et lui meme n'a plus d'enfant
+--stringOf2 (Noeud (p_char, p_code, (Noeud (Just f_char, f_code , f_children)):[]) ) code str = stringOf2 (Noeud (f_char, f_code, f_children)) code (str ++ [p_char])  --mon dernier fils et lui en a
 
 
 
 
-
-
-
-
-
-
+--stringOf (insert (insert (insert (Noeud (Nothing, Just (-1), [])) "a") "b") "c")
 
 
 
