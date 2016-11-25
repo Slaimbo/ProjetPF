@@ -166,6 +166,27 @@ stringOf2 (Noeud (Just p_char, p_code, (Noeud (Just f_char, f_code , f_children)
                         []  -> stringOf2 (Noeud (Just f_char, f_code, f_children)) code (str ++ [p_char])
                         any -> any
 
+--si str est dans l'arbre meme s'il n'as pas de code.
+isIn_sa (Noeud (Just p_char, _, _) ) [] = True
+isIn_sa (Noeud (_, _, []) ) (x:xs) = False
+isIn_sa (Noeud (p_char, p_code, (Noeud (Just f_char, f_code , f_children)):xs) ) str = 
+                if f_char == (head str)
+                    then isIn_sa (Noeud (Just f_char, f_code , f_children)) (tail str)
+                    else isIn_sa (Noeud (p_char, p_code, xs) ) str
+
+
+split2 arbre str_start [] match_str end_match = (match_str, codeOf farbre match_str, end_match)
+split2 arbre str_start (x:xs) match_str end_str = 
+                                    if (isIn_sa arbre (str_start ++ [x]))
+                                    then 
+                                        if isIn(arbre (str_start ++ [x]))
+                                         then split2 arbre (str_start ++ [x]) xs (str_match ++ [x]) xs 
+                                         else split2 arbre (str_start ++ [x]) xs match_str end_str
+                                    else (match_str, (codeOf arbre match_str), end_str)
+
+    if (isIn arbre (str_start ++ [x])) == False)
+    
+
 
 
 -- Instanciation
@@ -196,9 +217,9 @@ instance Table Arbre where
                     any -> Just any
 
     
-    isIn (Noeud (Just p_char, Just p_code, _) ) [] = True          -- si str vide et code -> OK
-    isIn (Noeud (_, Nothing, _) ) [] = False 
-    isIn (Noeud (_, _, []) ) (x:xs) = False                -- si str non vide et plus de fils
+    isIn (Noeud (Just p_char, Just p_code, _) ) [] = True
+    isIn (Noeud (_, Nothing, _) ) [] = False
+    isIn (Noeud (_, _, []) ) (x:xs) = False
 
     isIn (Noeud (p_char, p_code, (Noeud (Just f_char, f_code , f_children)):xs) ) str = 
             if f_char == (head str)
@@ -206,8 +227,9 @@ instance Table Arbre where
                 else isIn (Noeud (p_char, p_code, xs) ) str
 
 
+    split arbre (x:xs) = split2 arbre [x] xs
 
-
+   
 
 --case stringOf2 (Noeud (p_char, p_code, children) ) code [] of
 --                                                         [] -> Nothing
