@@ -1,4 +1,5 @@
-type Code = Int
+type Code = Int10
+
 
 --class (Eq a) => Table a where
 class Table a where
@@ -42,7 +43,7 @@ lzwDecode table (x:xs) = case stringOf table x of
 
 -------------------------- Question 2 ----------------------------------------
 
-data Dico = Dico [(Code, String)]
+data Dico_lol = Dico [(Code, String)]
 
 
  --search the biggest code in Dico and add this with new string give in parameter--
@@ -54,7 +55,7 @@ max_dico max (x:xs) = if (fst x) > max
                       else max_dico max xs
 
 
-split_2 :: Dico -> String -> String -> Maybe Code -> (String, Maybe Code, String)
+split_2 :: Dico_lol -> String -> String -> Maybe Code -> (String, Maybe Code, String)
 
 split_2 (Dico dic) startstr [] lastcode = (startstr, lastcode, [])
 split_2 (Dico dic) startstr (x:xs) lastcode = if codeOf (Dico dic) (startstr ++ [x]) == Nothing
@@ -62,7 +63,7 @@ split_2 (Dico dic) startstr (x:xs) lastcode = if codeOf (Dico dic) (startstr ++ 
                                                 else split_2 (Dico dic) (startstr ++ [x]) xs (codeOf (Dico dic) (startstr ++ [x]))
 
 
-instance Table Dico where
+instance Table Dico_lol where
 
  --Return an empty dico--
 
@@ -103,12 +104,12 @@ instance Table Dico where
 -- Test de la partie 1
 
 --lzwDecode (Dico [ (0, "a"), (1, "b"), (2, "c") ] ) (lzwEncode (Dico [ (0, "a"), (1, "b"), (2, "c") ] ) "abccba")
-initDico :: String -> Dico
+initDico :: String -> Dico_lol
 
 initDico (x:[]) = Dico [(0, [x])]
 initDico (x:xs) = insert (initDico xs) [x] 
 
-testDico str = lzwDecode dico (lzwEncode dico str)
+test str = lzwDecode dico (lzwEncode dico str)
             where dico = initDico "abcdefghijklmnopqrstuvwxyz "
 
 
@@ -239,12 +240,30 @@ instance Table Arbre where
 
     split arbre str = split2 arbre [] str [] []
 
+   
+
+--case stringOf2 (Noeud (p_char, p_code, children) ) code [] of
+--                                                         [] -> Nothing
+--                                                         any -> any
+                                                      
 
 
---lzwDecode (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "b") "c") "d") "e") "f") "g") "h") "i") "j") "k") "l") "m") "n") "o") "p") "q") "r") "s") "t") "u") "v") "w") "x") "y") "z") (lzwEncode (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "b") "c") "d") "e") "f") "g") "h") "i") "j") "k") "l") "m") "n") "o") "p") "q") "r") "s") "t") "u") "v") "w") "x") "y") "z") "abccba")
+--stringOf2 (Noeud (p_char, p_code, (Noeud (Just f_char, f_code , [])):[]) ) code str = []  --Mon dernier fils et lui meme n'a plus d'enfant
+--stringOf2 (Noeud (p_char, p_code, (Noeud (Just f_char, f_code , f_children)):[]) ) code str = stringOf2 (Noeud (f_char, f_code, f_children)) code (str ++ [p_char])  --mon dernier fils et lui en a
 
 
-lzwDecode (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "b") "c") "d") "e") "f") "g") "h") "i") "j") "k") "l") "m") "n") "o") "p") "q") "r") "s") "t") "u") "v") "w") "x") "y") "z") [0,1,2,2,1,0]
+
+
+--stringOf (insert (insert (insert (Noeud (Nothing, Just (-1), [])) "a") "b") "c")
+
+
+--split (insert (insert (insert (Noeud (Nothing, Just (-1), [])) "a") "b") "c") "abc"
+
+
+--lzwEncode (insert (insert (insert (Noeud (Nothing, Just (-1), [])) "a") "b") "c") "abccba"
+
+
+--lzwDecode (insert (insert (insert (Noeud (Nothing, Just (-1), [])) "a") "b") "c") (lzwEncode (insert (insert (insert (Noeud (Nothing, Just (-1), [])) "a") "b") "c") "abccba")
 
 initArbre :: String -> Arbre
 
@@ -252,9 +271,14 @@ initArbre (x:[]) = insert (Noeud (Nothing, Just (-1), [])) [x]
 initArbre str = insert (initArbre (take ((length str) - 1) str)) [car]
                     where car = head (reverse str)
 
+--initDico2 (Noeud (Nothing, Just -1, initDico (xs) )) x
+a []  = []
+a str = a (tail str)
 
+execute arbre nb = if nb > 0
+                then execute (initArbre "abcdefghijklmnopqrstuvwxyz12346789 ") (nb - 1)
+                else Just 1
 
-testArbre str = getcodeFrom arbre
-            where arbre = initArbre " abcdefghijklmnopqrstuvwxyz"
+--split (initArbre "abc") "a"
 
 
