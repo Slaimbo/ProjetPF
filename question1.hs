@@ -121,7 +121,8 @@ data Arbre = Noeud (Maybe Char, Maybe Code, [Arbre])
 --retourne les arbres qui n'ont pas matché, l'arbre qui match, le reste des arbres.
 inChildren :: [Arbre] -> [Arbre] -> Char -> [[Arbre]]
 inChildren [] poubelle char = []
-inChildren ((Noeud (car, code, children)):xs) poubelle char = if car == Just char
+inChildren ((Noeud (car, code, children)):xs) poubelle char =
+                                        if car == (Just char)
                                         then [poubelle, [x], xs]
                                         else inChildren xs (x:poubelle) char
                                             where x = Noeud (car, code, children)
@@ -148,20 +149,24 @@ getcode ((Noeud (Just char, Just code, children_f)):ys) = [Just code] ++ (getcod
 getcode ((Noeud (Just char, Nothing, children_f)):ys) = (getcode ys) ++ (getcode children_f)
 
 
+
 --Creation des branches quand plus aucun chemin ne correspond a mon inclusion
-insert2 (Noeud (Nothing, Nothing, [])) str newcode = if (length str == 1)
-                                                       then Noeud (Just (head str), Just (newcode+1), [])
-                                                       else Noeud (Just (head str), Nothing, [insert2 (Noeud (Nothing, Nothing, [])) (tail str) newcode ] )
+
+insert2 (Noeud (Nothing, Nothing, [])) (x:xs) newcode = if (xs == [])
+                                                       then Noeud (Just x, Just (newcode+1), [])
+                                                       else Noeud (Just x, Nothing, [ insert2 (Noeud (Nothing, Nothing, [])) xs (newcode) ] )
 
 --parcour de l'arbre tant que cela correspond a mon insertion
 --Eventuellement gerer le cas insert aaaa puis insert aa donc le cas ou code = Nothing si bug sinon osef
-insert2 (Noeud (char, code, children) ) (y:ys) newcode = if (length mathch_child) == 0
-                                                             then Noeud (char, code, children ++ [insert2 (Noeud (Nothing, Nothing, [])) (y:ys) newcode ] )
-                                                             else Noeud (char, code, ( (mathch_child !! 0) ++ [(insert2 ( (mathch_child !! 1) !! 0) ys newcode)] ++ (mathch_child !! 2) ) )
-                                                                where father = Noeud (char, code, children)
-                                                                      mathch_child = inChildren children [] y   --(nomatchbefore, match, nomatchafter)
+insert2 (Noeud (char, code, children) ) (y:ys) newcode = 
+                    if (length mathch_child) == 0
+                         then Noeud (char, code, children ++ [insert2 (Noeud (Nothing, Nothing, [])) (y:ys) newcode ] )
+                         else Noeud (char, code, ( (mathch_child !! 0) ++ [(insert2 ( (mathch_child !! 1) !! 0) ys newcode)] ++ (mathch_child !! 2) ) )
+                    where father = Noeud (char, code, children)
+                          mathch_child = inChildren children [] y   --(nomatchbefore, match, nomatchafter)
 
 stringOf2 :: Arbre -> Code -> String -> String
+
 stringOf2 (Noeud (Just p_char, p_code, []) ) code str = if (Just code) == p_code
                                                        then str ++ [p_char]
                                                        else []
@@ -207,6 +212,8 @@ instance Table Arbre where
     insert (Noeud (char, code, children) ) str = if getcode children == [] --Aucun code n'as ete trouvé
                                                     then insert2 (Noeud (char, code, children)) str (-1)
                                                     else insert2 (Noeud (char, code, children)) str (maxi (getcode children))
+
+
     --getcodeFrom (insert (insert(Noeud (Nothing, Just (-1), [] )) "oooo") "oo")
 
     codeOf (Noeud (Just p_char, Just p_code, _) ) [] = Just p_code -- si str vide et code -> OK
@@ -244,7 +251,7 @@ instance Table Arbre where
 --lzwDecode (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "b") "c") "d") "e") "f") "g") "h") "i") "j") "k") "l") "m") "n") "o") "p") "q") "r") "s") "t") "u") "v") "w") "x") "y") "z") (lzwEncode (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "b") "c") "d") "e") "f") "g") "h") "i") "j") "k") "l") "m") "n") "o") "p") "q") "r") "s") "t") "u") "v") "w") "x") "y") "z") "abccba")
 
 
-lzwDecode (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "b") "c") "d") "e") "f") "g") "h") "i") "j") "k") "l") "m") "n") "o") "p") "q") "r") "s") "t") "u") "v") "w") "x") "y") "z") [0,1,2,2,1,0]
+--lzwDecode (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "b") "c") "d") "e") "f") "g") "h") "i") "j") "k") "l") "m") "n") "o") "p") "q") "r") "s") "t") "u") "v") "w") "x") "y") "z") [0,1,2,2,1,0]
 
 initArbre :: String -> Arbre
 
@@ -256,5 +263,21 @@ initArbre str = insert (initArbre (take ((length str) - 1) str)) [car]
 
 testArbre str = getcodeFrom arbre
             where arbre = initArbre " abcdefghijklmnopqrstuvwxyz"
+
+
+pipi (Noeud (a, aa, c)) = length ((inChildren c [] 'z'))
+pipi2 (Noeud (a, aa, c)) = length (c)
+
+a=Noeud (Nothing, Just (-1),[(Noeud (Just 'a', Just 0, [])),(Noeud (Just 'b', Just 1, [])),(Noeud (Just 'c', Just 2, [])),(Noeud (Just 'd', Just 3, [])),(Noeud (Just 'e', Just 4, [])),(Noeud (Just 'f', Just 5, [])),(Noeud (Just 'g', Just 6, [])),(Noeud (Just 'h', Just 7, [])),(Noeud (Just 'i', Just 8, [])),(Noeud (Just 'j', Just 9, [])),(Noeud (Just 'k', Just 10, [])),(Noeud (Just 'l', Just 11, [])),(Noeud (Just 'm', Just 12, [])),(Noeud (Just 'n', Just 13, [])),(Noeud (Just 'o', Just 14, [])),(Noeud (Just 'p', Just 15, [])),(Noeud (Just 'q', Just 16, [])),(Noeud (Just 'r', Just 17, [])),(Noeud(Just 's', Just 18, [])),(Noeud (Just 't', Just 19, [])),(Noeud (Just 'u', Just 20, [])),(Noeud (Just 'v', Just 21, [])),(Noeud (Just 'w', Just 22, [])),(Noeud (Just 'x', Just 23, [])),(Noeud (Just 'y', Just 24, [])),(Noeud (Just 'z', Just 25, []))])
+
+
+
+
+
+
+
+
+
+
 
 
