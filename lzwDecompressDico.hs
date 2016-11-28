@@ -1,7 +1,6 @@
 import System.Environment as SE
 import qualified Data.ByteString.Lazy as BS
 import Data.Bits
-
 import Data.Word
 import Data.Int
 import Data.Char (ord)
@@ -24,15 +23,22 @@ class Table a where
     isIn :: a -> String8 -> Bool
     split :: a -> String8 -> (String8, Maybe Code, String8)
 
-lzwEncode :: Table a => a -> String8 -> [Code]
-lzwEncode table [] = []
-lzwEncode table str = 
-  case split table str of
-    (_, Nothing, _) -> []
-    (prefix, Just code, (head:tail)) -> 
-        code : lzwEncode (insert table (prefix ++ [head])) (head:tail)
-    (prefix, Just code, []) -> [code]
 
+--translate code into string with table, oldtrans and untranslated code as parameter-- 
+lzw_Decode :: Table a => a -> String8 -> [Code] -> String8
+lzw_Decode table oldtrans [] = oldtrans
+lzw_Decode table oldtrans (x:xs) = case stringOf table x of
+        Just newtrans -> oldtrans ++ lzw_Decode (insert table (oldtrans ++ [head newtrans])) newtrans xs
+        Nothing -> oldtrans ++ lzw_Decode (insert table (oldtrans ++ [head newtrans])) newtrans xs
+            where newtrans = oldtrans ++ [head oldtrans]
+
+--main decode function to decode the first code and call lzw_Decode with table, translating string and rest of code--
+
+lzwDecode :: Table a => a -> [Code] -> String8
+lzwDecode table [] = []
+lzwDecode table (x:xs) = case stringOf table x of
+        Just string -> lzw_Decode table string xs
+        Nothing -> []
 
 -------------------------- Question 2 ----------------------------------------
 
@@ -94,9 +100,7 @@ instance Table Dico where
                                 else split_2 (Dico dic) [x] xs (codeOf (Dico dic) [x])
 
 
--- Test de la partie 1
 
---lzwDecode (Dico [ (0, "a"), (1, "b"), (2, "c") ] ) (lzwEncode (Dico [ (0, "a"), (1, "b"), (2, "c") ] ) "abccba")
 initDico :: String8 -> Dico
 
 initDico (x:[]) = Dico [(0, [x])]
@@ -104,28 +108,23 @@ initDico str = insert (initDico (take ((length str) - 1) str)) [car]
                 where car = head (reverse str)
 
 
---Compresse le fichier src dans le fichier dest en utilisant la table table.
+-- Compresse le fichier src dans le fichier dest en utilisant la table table.
 -- La table (initDico [0..255] ou initArbre [0..255])- fichier source - fichier ciblef
-compFile :: Table a => a -> FilePath -> FilePath -> IO ()
-compFile table src dest = do
+decompFile :: Table a => a -> FilePath -> FilePath -> IO ()
+decompFile table src dest = do
     contents <- BS.readFile src
-    BS.writeFile dest (BS.pack (code2byte (lzwEncode table (BS.unpack contents))))
+    BS.writeFile dest (BS.pack (lzwDecode table (byte2code (BS.unpack contents))))
 
 
---main = print ( lzwEncode (initArbre [97..97 + 25]) fileToWordList)
-
-getByteFromCode :: Code -> [Byte]
-getByteFromCode code = [fromIntegral (shiftR code 8), fromIntegral code]
-
-code2byte :: [Code] -> [Byte]
-code2byte [] = []
-code2byte (x:xs) = (getByteFromCode x) ++ code2byte xs
+byte2code :: [Byte] -> [Code]
+byte2code [] = []
+byte2code (x:xs:xss) = ((shiftL (fromInteger (toInteger x)) 8) + (fromInteger (toInteger xs))) : (byte2code xss)
 
 
 
 main = do
         args <- SE.getArgs
-        compFile (initDico [0..255]) (args !! 0) (args !! 1)
+        decompFile (initDico [0..255]) (args !! 0) (args !! 1)
 
 
 
