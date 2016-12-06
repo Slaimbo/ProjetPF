@@ -5,7 +5,6 @@ type Code = Int
 type Byte = Word8
 type Int10 = Word16
 
---class (Eq a) => Table a where
 class Table a where
     empty :: a
     insert :: a -> String -> a
@@ -106,15 +105,30 @@ instance Table Dico where
 
 -- Test de la partie 1
 
---lzwDecode (Dico [ (0, "a"), (1, "b"), (2, "c") ] ) (lzwEncode (Dico [ (0, "a"), (1, "b"), (2, "c") ] ) "abccba")
+--Initialisation du dico.
 initDico :: String -> Dico
-
 initDico (x:[]) = Dico [(0, [x])]
 initDico str = insert (initDico (take ((length str) - 1) str)) [car]
                 where car = head (reverse str)
 
-testDico str = lzwDecode dico (lzwEncode dico str)
-            where dico = initDico "abcdefghijklmnopqrstuvwxyz "
+testDico :: String -> Bool
+testDico str = if (lzwDecode dico (lzwEncode dico str)) == str
+                then True
+                else False
+                where dico = initDico "abcdefghijklmnopqrstuvwxyz0123456789 "
+
+
+----Different tests à effectuer
+--testDico "vqb9603gegjw45zipg36"
+--testDico "kzc936dcd03ynvytrnjl"
+--testDico "okjsl8450fok51n1hgcb"
+--testDico "iuk5k1pqk9ng7tdmwqvm"
+--testDico "7m4z4276fo6srqzryvbl"
+--testDico "2v08tar6pxgoggx62q6v"
+--testDico "eqrbpsutgm58at2spmpe"
+--testDico "d92q9s7wvu5lvjuqofvd"
+--testDico "61ha0e4z52zcg7127ul0"
+--testDico "2yyipyi35tx4wo1yxtxu"
 
 
 -------------------------- Question 4 ----------------------------------------
@@ -135,9 +149,10 @@ inChildren ((Noeud (car, code, children)):xs) poubelle char =
 -- Retourne le plus grand élément de la liste donné en entré
 maxi :: [Maybe Code] -> Code
 maxi ((Just code):[]) = code 
-maxi ((Just code):xs) = if code > (maxi xs)
+maxi ((Just code):xs) = if code > res
                          then code
-                         else maxi xs
+                         else res
+                           where res = maxi xs
 
 getcodeFrom (Noeud (_, _, fils)) = getcode fils
 
@@ -156,7 +171,6 @@ getcode ((Noeud (Just char, Nothing, children_f)):ys) = (getcode ys) ++ (getcode
 
 
 --Creation des branches quand plus aucun chemin ne correspond a mon inclusion
-
 insert2 (Noeud (Nothing, Nothing, [])) (x:xs) newcode = if (xs == [])
                                                        then Noeud (Just x, Just (newcode+1), [])
                                                        else Noeud (Just x, Nothing, [ insert2 (Noeud (Nothing, Nothing, [])) xs (newcode) ] )
@@ -171,42 +185,7 @@ insert2 (Noeud (char, code, children) ) (y:ys) newcode =
                           mathch_child = inChildren children [] y   --(nomatchbefore, match, nomatchafter)
 
 
---insert_1 (Noeud (Nothing, Just (-1), [])) (x:[]) code = [(Noeud ((Just x), Just code, []))]
-                                                
---insert_1 (Noeud (Nothing, Just (-1), [])) (x:xs) code = [(Noeud ((Just x), Nothing, (insert_2 (Noeud ((Just x), Nothing, [])) xs code)))]
-
---insert_1 (Noeud (Nothing, Just (-1), (x:xs))) search code = case (insert_2 x search code) of
---                                                    [] -> [x] ++ (insert_1 (Noeud (Nothing, Just (-1), xs)) search code)
---                                                    childnode -> childnode ++ xs
-                                                    
-
-
-
-
-
-
---insert_2 :: Arbre -> String -> Code -> [Arbre]
-
---insert_2 (Noeud (Just char, codep, [])) (x:[]) code = if (char == x)
---                                                        then [Noeud (Just char, Just code, [])]
---                                                        else []
-
---insert_2 (Noeud (Just char, codep, [])) search code = if (char == (head search)) 
---                                                        then [Noeud (Just char, codep, (insert_2 (Noeud ( (Just (head (tail (take 2 search)))), Nothing, [])) (tail search) code))]
---                                                        else []
-
-
---insert_2 (Noeud (Just char, codep, (x:xs))) search code = if (char == (head search))
---                                                        then case (insert_2 x (tail search) code) of
---                                                                [] -> [(Noeud (Just char, codep, ([x] ++ (insert_2 (Noeud (Just char, codep, xs)) search code))))]
---                                                                childnode -> [Noeud (Just char, codep, childnode ++ xs)]
---                                                        else []
-
-
-
-
 stringOf2 :: Arbre -> Code -> String -> String
-
 stringOf2 (Noeud (Just p_char, p_code, []) ) code str = if (Just code) == p_code
                                                        then str ++ [p_char]
                                                        else []
@@ -239,29 +218,16 @@ split2 arbre str_start (x:xs) match_str end_str =
                                             else split2 arbre (str_start ++ [x]) xs match_str end_str
                                     else (match_str, (codeOf arbre match_str), end_str)
 
-   -- if (isIn arbre (str_start ++ [x])) == False)
-    
-
-
-
+ 
 -- Instanciation
 instance Table Arbre where
     empty = Noeud (Nothing, Nothing, []) -- Racine de tout les sous arbre
     
     -- à iniaitliser avec un code à -1 pour l'arbre racine
-    insert (Noeud (char, code, children) ) str = if getcode children == [] --Aucun code n'as ete trouvé
-                                                    then insert2 (Noeud (char, code, children)) str (-1)
-                                                    else insert2 (Noeud (char, code, children)) str (maxi (getcode children))
-    
---    insert (Noeud (Nothing, Just (-1), [])) search = (Noeud (Nothing, Just (-1), (insert_1 (Noeud (Nothing, Just (-1), [])) search 0)))
-    
---    insert (Noeud (Nothing, Just (-1), (x:xs))) search = (Noeud (Nothing, Just (-1), (insert_1 (Noeud (Nothing, Just (-1), (x:xs))) search code)))
---                                                        where code = (maxi (getcodeFrom (Noeud (Nothing, Just (-1), (x:xs))))) + 1
+    insert (Noeud (char, code, children) ) str = case getcode children of --Aucun code n'as ete trouvé
+                                                    [] -> insert2 (Noeud (char, code, children)) str (-1)
+                                                    xs -> insert2 (Noeud (char, code, children)) str (maxi xs)
 
-    
-
-
-    --getcodeFrom (insert (insert(Noeud (Nothing, Just (-1), [] )) "oooo") "oo")
 
     codeOf (Noeud (Just p_char, Just p_code, _) ) [] = Just p_code -- si str vide et code -> OK
     codeOf (Noeud (Just p_char, Nothing, _) ) [] = Nothing         -- si str vide mais pas code
@@ -274,7 +240,6 @@ instance Table Arbre where
 
     
     stringOf (Noeud (Nothing, p_code, [] )) code = Nothing
-
     stringOf (Noeud (Nothing, p_code, x:xs ) ) code = 
                 case stringOf2 x code [] of
                     []  -> stringOf (Noeud (Nothing, p_code, xs ) ) code
@@ -293,18 +258,7 @@ instance Table Arbre where
 
     split arbre str = split2 arbre [] str [] []
 
---codeOf (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "ab") "a"
 
-
---lzwDecode (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "b") "c") "d") "e") "f") "g") "h") "i") "j") "k") "l") "m") "n") "o") "p") "q") "r") "s") "t") "u") "v") "w") "x") "y") "z") (lzwEncode (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "b") "c") "d") "e") "f") "g") "h") "i") "j") "k") "l") "m") "n") "o") "p") "q") "r") "s") "t") "u") "v") "w") "x") "y") "z") "abccba")
-
-
---tartare (lzwEncode (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert (insert ( Noeud (Nothing, Just (-1), [])) "a") "b") "c") "d") "e") "f") "g") "h") "i") "j") "k") "l") "m") "n") "o") "p") "q") "r") "s") "t") "u") "v") "w") "x") "y") "z") "abcde")
-
-nothing x = 1
-
-tartare [] = 0
-tartare (x:xs) = 1 + tartare xs
 
 showCode ( Noeud (Nothing, Just (-1), [] )) = []
 showCode ( Noeud (Nothing, Just (-1), ((Noeud (Just char, Just code, [])):xs))) = [Just code] ++ showCode ( Noeud (Nothing, Just (-1), xs))
@@ -312,30 +266,57 @@ showCode ( Noeud (Nothing, Just (-1), ((Noeud (Just char, Just code, [])):xs))) 
 showCar ( Noeud (Nothing, Just (-1), [] )) = []
 showCar ( Noeud (Nothing, Just (-1), ((Noeud (Just char, Just code, [])):xs))) = [Just char] ++ showCar ( Noeud (Nothing, Just (-1), xs))
 
-initArbre :: String -> Arbre
+-- Test de l'instantiation Arbre
 
+initArbre :: String -> Arbre
 initArbre (x:[]) = insert (Noeud (Nothing, Just (-1), [])) [x]
 initArbre str = insert (initArbre (take ((length str) - 1) str)) [car]
                     where car = head (reverse str)
 
+testArbre :: String -> Bool
+testArbre str = if (lzwDecode arbre (lzwEncode arbre str)) == str
+                 then True
+                 else False
+                 where arbre = initArbre "abcdefghijklmnopqrstuvwxyz0123456789 "
+
+----Different tests à effectuer
+--testArbre "vqb9603gegjw45zipg36"
+--testArbre "kzc936dcd03ynvytrnjl"
+--testArbre "okjsl8450fok51n1hgcb"
+--testArbre "iuk5k1pqk9ng7tdmwqvm"
+--testArbre "7m4z4276fo6srqzryvbl"
+--testArbre "2v08tar6pxgoggx62q6v"
+--testArbre "eqrbpsutgm58at2spmpe"
+--testArbre "d92q9s7wvu5lvjuqofvd"
+--testArbre "61ha0e4z52zcg7127ul0"
+--testArbre "2yyipyi35tx4wo1yxtxu"
+
+----Test Réalisable----
+
+--testArbre "aa"
+--testArbre "aaa"
+--testArbre "z"
 
 
-testArbre str = getcodeFrom arbre
-            where arbre = initArbre " abcdefghijklmnopqrstuvwxyz"
 
 
-pipi (Noeud (a, aa, c)) = length ((inChildren c [] 'z'))
-pipi2 (Noeud (a, aa, c)) = length (c)
 
-a=Noeud (Nothing, Just (-1),[(Noeud (Just 'a', Just 0, [])),(Noeud (Just 'b', Just 1, [])),(Noeud (Just 'c', Just 2, [])),(Noeud (Just 'd', Just 3, [])),(Noeud (Just 'e', Just 4, [])),(Noeud (Just 'f', Just 5, [])),(Noeud (Just 'g', Just 6, [])),(Noeud (Just 'h', Just 7, [])),(Noeud (Just 'i', Just 8, [])),(Noeud (Just 'j', Just 9, [])),(Noeud (Just 'k', Just 10, [])),(Noeud (Just 'l', Just 11, [])),(Noeud (Just 'm', Just 12, [])),(Noeud (Just 'n', Just 13, [])),(Noeud (Just 'o', Just 14, [])),(Noeud (Just 'p', Just 15, [])),(Noeud (Just 'q', Just 16, [])),(Noeud (Just 'r', Just 17, [])),(Noeud(Just 's', Just 18, [])),(Noeud (Just 't', Just 19, [])),(Noeud (Just 'u', Just 20, [])),(Noeud (Just 'v', Just 21, [])),(Noeud (Just 'w', Just 22, [])),(Noeud (Just 'x', Just 23, [])),(Noeud (Just 'y', Just 24, [])),(Noeud (Just 'z', Just 25, []))])
 
-putCode :: [Code] -> IO ()
-putCode [] = return ()
-putCode (x:xs) = 
-            putChar (head (show x)) >>= \_ ->
-            putCode xs
 
-main = putCode ( lzwEncode (initArbre "abcdefghijklmnopqrstuvwxyz") "abcdef")
+
+a=Noeud (Nothing,Just (-1),[Noeud (Just 'a',Just 0,[]),Noeud (Just 'b',Just 1,[]),Noeud (Just 'c',Just 2,[]),Noeud (Just 'd',Just 3,[]),Noeud (Just 'e',Just 4,[]),Noeud (Just 'f',Just 5,[]),Noeud (Just 'g',Just 6,[]),Noeud (Just 'h',Just 7,[]),Noeud (Just 'i',Just 8,[]),Noeud (Just 'j',Just 9,[]),Noeud (Just 'k',Just 10,[]),Noeud (Just 'l',Just 11,[]),Noeud (Just 'm',Just 12,[]),Noeud (Just 'n',Just 13,[]),Noeud (Just 'o',Just 14,[]),Noeud (Just 'p',Just 15,[]),Noeud (Just 'q',Just 16,[]),Noeud (Just 'r',Just 17,[]),Noeud (Just 's',Just 18,[]),Noeud (Just 't',Just 19,[]),Noeud (Just 'u',Just 20,[]),Noeud (Just 'v',Just 21,[]),Noeud (Just 'w',Just 22,[]),Noeud (Just 'x',Just 23,[]),Noeud (Just 'y',Just 24,[]),Noeud (Just 'z',Just 25,[])])
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

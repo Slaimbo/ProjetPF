@@ -14,4 +14,4 @@ lzwDecompressArbre.exe: lzwDecompressArbre.hs
 	ghc -o lzwDecompressArbre.exe lzwDecompressArbre.hs
 
 clean:
-	rm -f *.exe *.hi *.o
+	rm -f *.exe *.hi *.o *.decomp *.comp

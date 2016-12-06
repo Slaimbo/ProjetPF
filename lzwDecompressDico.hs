@@ -4,8 +4,6 @@ import Data.Bits
 import Data.Word
 import Data.Int
 import Data.Char (ord)
---import Data.Char8
---import qualified Data.ByteString.Char8
 
 type Byte = Word8
 type String8 = [Byte]
@@ -13,11 +11,9 @@ type Int10 = Word16
 type Code = Int10
 
 
---class (Eq a) => Table a where
 class Table a where
     empty :: a
     insert :: a -> String8 -> a
-    
     codeOf :: a -> String8 -> Maybe Code
     stringOf :: a -> Code -> Maybe String8
     isIn :: a -> String8 -> Bool
@@ -45,8 +41,7 @@ lzwDecode table (x:xs) = case stringOf table x of
 data Dico = Dico [(Code, String8)] deriving (Show)
 
 
- --search the biggest code in Dico and add this with new string give in parameter--
-
+--search the biggest code in Dico and add this with new string give in parameter--
 max_dico :: Code -> [(Code, String8)] -> Code
 max_dico max [] = max+1
 max_dico max (x:xs) = if (fst x) > max
@@ -61,39 +56,32 @@ split_2 (Dico dic) startstr (x:xs) lastcode = if codeOf (Dico dic) (startstr ++ 
                                                 then (startstr, lastcode, x:xs)
                                                 else split_2 (Dico dic) (startstr ++ [x]) xs (codeOf (Dico dic) (startstr ++ [x]))
 
-
 instance Table Dico where
 
  --Return an empty dico--
-
     empty = Dico []                                                          
 
  --insert a new code and associated word in the Dico--
-
     insert (Dico []) str = Dico ( [(0, str)] )                              
     insert (Dico (x:xs)) str = Dico ( (max_dico (fst x) xs, str) : (x:xs) )    
 
  --return True if string parameter is in Dico, else false--
-
     isIn (Dico []) str = False
     isIn (Dico (x:xs)) str = if (snd x) == str
                         then True
                         else isIn (Dico xs) str
 
  --return associated code of word or nothing-- sera utiliser pas split
-
     codeOf (Dico []) str = Nothing
     codeOf (Dico (x:xs)) str = if (snd x) == str
                                 then Just (fst x)
                                 else codeOf (Dico xs) str
 
 --return associated string of code or nothing--
-
     stringOf (Dico []) code = Nothing
     stringOf (Dico (x:xs)) code = if (fst x) == code
                                 then Just (snd x)
                                 else stringOf (Dico xs) code
-
 
     split (Dico dic) (x:xs) = if codeOf (Dico dic) [x] == Nothing
                                 then ([], Nothing, (x:xs))
@@ -102,11 +90,12 @@ instance Table Dico where
 
 
 initDico :: String8 -> Dico
-
 initDico (x:[]) = Dico [(0, [x])]
 initDico str = insert (initDico (take ((length str) - 1) str)) [car]
                 where car = head (reverse str)
 
+
+---- Gestion des fichier ----
 
 -- Compresse le fichier src dans le fichier dest en utilisant la table table.
 -- La table (initDico [0..255] ou initArbre [0..255])- fichier source - fichier ciblef
@@ -115,12 +104,9 @@ decompFile table src dest = do
     contents <- BS.readFile src
     BS.writeFile dest (BS.pack (lzwDecode table (byte2code (BS.unpack contents))))
 
-
 byte2code :: [Byte] -> [Code]
 byte2code [] = []
 byte2code (x:xs:xss) = ((shiftL (fromInteger (toInteger x)) 8) + (fromInteger (toInteger xs))) : (byte2code xss)
-
-
 
 main = do
         args <- SE.getArgs

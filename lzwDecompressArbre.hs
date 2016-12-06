@@ -56,9 +56,10 @@ inChildren ((Noeud (car, code, children)):xs) poubelle char =
 -- Retourne le plus grand élément de la liste donné en entré
 maxi :: [Maybe Code] -> Code
 maxi ((Just code):[]) = code 
-maxi ((Just code):xs) = if code > (maxi xs)
+maxi ((Just code):xs) = if code > res
                          then code
-                         else maxi xs
+                         else res
+                           where res = maxi xs
 
 getcodeFrom (Noeud (_, _, fils)) = getcode fils
 
@@ -135,9 +136,9 @@ instance Table Arbre where
     empty = Noeud (Nothing, Nothing, []) -- Racine de tout les sous arbre
     
     -- à iniaitliser avec un code à -1 pour l'arbre racine
-    insert (Noeud (char, code, children) ) str = if getcode children == [] --Aucun code n'as ete trouvé
-                                                    then insert2 (Noeud (char, code, children)) str (-1)
-                                                    else insert2 (Noeud (char, code, children)) str (maxi (getcode children))
+    insert (Noeud (char, code, children) ) str = case getcode children of --Aucun code n'as ete trouvé
+                                                    [] -> insert2 (Noeud (char, code, children)) str (-1)
+                                                    xs -> insert2 (Noeud (char, code, children)) str (maxi xs)
 
 
     --getcodeFrom (insert (insert(Noeud (Nothing, Just (-1), [] )) "oooo") "oo")

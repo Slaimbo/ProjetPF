@@ -5,8 +5,6 @@ import Data.Bits
 import Data.Word
 import Data.Int
 import Data.Char (ord)
---import Data.Char8
---import qualified Data.ByteString.Char8
 
 type Byte = Word8
 type String8 = [Byte]
@@ -14,11 +12,9 @@ type Int10 = Word16
 type Code = Int10
 
 
---class (Eq a) => Table a where
 class Table a where
     empty :: a
     insert :: a -> String8 -> a
-    
     codeOf :: a -> String8 -> Maybe Code
     stringOf :: a -> Code -> Maybe String8
     isIn :: a -> String8 -> Bool
@@ -40,7 +36,6 @@ lzwEncode table str =
 -- L'arbre de prefixe.
 newtype Arbre = Noeud (Maybe Byte, Maybe Code, [Arbre]) deriving (Show)
 
-
 --retourne les arbres qui n'ont pas matché, l'arbre qui match, le reste des arbres.
 inChildren :: [Arbre] -> [Arbre] -> Byte -> [[Arbre]]
 inChildren [] poubelle char = []
@@ -53,9 +48,10 @@ inChildren ((Noeud (car, code, children)):xs) poubelle char =
 -- Retourne le plus grand élément de la liste donné en entré
 maxi :: [Maybe Code] -> Code
 maxi ((Just code):[]) = code 
-maxi ((Just code):xs) = if code > (maxi xs)
+maxi ((Just code):xs) = if code > res
                          then code
-                         else maxi xs
+                         else res
+                           where res = maxi xs
 
 getcodeFrom (Noeud (_, _, fils)) = getcode fils
 
@@ -74,7 +70,6 @@ getcode ((Noeud (Just char, Nothing, children_f)):ys) = (getcode ys) ++ (getcode
 
 
 --Creation des branches quand plus aucun chemin ne correspond a mon inclusion
-
 insert2 (Noeud (Nothing, Nothing, [])) (x:xs) newcode = if (xs == [])
                                                        then Noeud (Just x, Just (newcode+1), [])
                                                        else Noeud (Just x, Nothing, [ insert2 (Noeud (Nothing, Nothing, [])) xs (newcode) ] )
@@ -91,12 +86,10 @@ insert2 (Noeud (char, code, children) ) (y:ys) newcode =
 
 
 stringOf2 :: Arbre -> Code -> String8 -> String8
-
 stringOf2 (Noeud (Just p_char, p_code, []) ) code str = if (Just code) == p_code
                                                        then str ++ [p_char]
                                                        else []
 stringOf2 (Noeud (Nothing, _, []) ) code str = []
-
 stringOf2 (Noeud (Just p_char, p_code, (Noeud (Just f_char, f_code , f_children)):xs) ) code str =      --Je recherche dans le reste de mes fils et les fils de mon fils ou je retourne le code si trouvé
             if f_code == (Just code)
                 then str ++ [p_char] ++ [f_char]
@@ -131,9 +124,9 @@ instance Table Arbre where
     empty = Noeud (Nothing, Nothing, []) -- Racine de tout les sous arbre
     
     -- à iniaitliser avec un code à -1 pour l'arbre racine
-    insert (Noeud (char, code, children) ) str = if getcode children == [] --Aucun code n'as ete trouvé
-                                                    then insert2 (Noeud (char, code, children)) str (-1)
-                                                    else insert2 (Noeud (char, code, children)) str (maxi (getcode children))
+    insert (Noeud (char, code, children) ) str = case getcode children of --Aucun code n'as ete trouvé
+                                                    [] -> insert2 (Noeud (char, code, children)) str (-1)
+                                                    xs -> insert2 (Noeud (char, code, children)) str (maxi xs)
     
 
 
@@ -168,26 +161,11 @@ instance Table Arbre where
     split arbre str = split2 arbre [] str [] []
 
 
-nothing x = 1
-
-tartare [] = 0
-tartare (x:xs) = 1 + tartare xs
-
-showCode ( Noeud (Nothing, Just (-1), [] )) = []
-showCode ( Noeud (Nothing, Just (-1), ((Noeud (Just char, Just code, [])):xs))) = [Just code] ++ showCode ( Noeud (Nothing, Just (-1), xs))
-
-showCar ( Noeud (Nothing, Just (-1), [] )) = []
-showCar ( Noeud (Nothing, Just (-1), ((Noeud (Just char, Just code, [])):xs))) = [Just char] ++ showCar ( Noeud (Nothing, Just (-1), xs))
 
 initArbre :: String8 -> Arbre
 initArbre (x:[]) = insert (Noeud (Nothing, Just (-1), [])) [x]
 initArbre str = insert (initArbre (take ((length str) - 1) str)) [car]
                     where car = head (reverse str)
-
-
-
-testArbre str = getcodeFrom arbre
-            where arbre = initArbre [97..97 + 25]
 
 
 --Compresse le fichier src dans le fichier dest en utilisant la table table.
@@ -210,6 +188,5 @@ code2byte (x:xs) = (getByteFromCode x) ++ code2byte xs
 main = do
         args <- SE.getArgs
         compFile (initArbre [0..255]) (args !! 0) (args !! 1)
-
 
 
